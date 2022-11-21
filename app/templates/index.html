@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+
+<h3>Task:</h3>
+<p class="lead">
+The United Nation and World Health Organization are forming a common taskforce together with
+industry leaders to address issues related Food Safety and Food Security. These organizations
+are looking into using data-driven modelling in order to help them solve some of the challenges
+in these areas.
+</p>
+
+<h3>Problem Statement:</h3>
+<p class="lead">
+How might we predic meat intake across the world based on socioeconomic factors?
+</p>
+
+<h3>Data:</h3>
+<p class="lead">
+For our data, we are using 2 sources.<br>
+For the independent variable (Meat Consumption), we are using data from <a href="https://ourworldindata.org/" target="_blank">Our World in Data </a>.<br>
+For the dependent/predictor variables, we are using data from the the <a href="https://data.worldbank.org/" target="_blank">World Bank Open Data </a>.<br>
+If you would like to view/download the data, head over to the <a href="/data">Data</a> tab.
+</p>
+
+<h3>Cleaning the datasets:</h3>
+<p class="lead">
+Since we have data from 2 different datasets, they are formatted differently and needs to be cleaned up before they can be used.<br>
+The raw data for meat consumptions looks like this:<br>
+<img src="/static/raw_meat_data.jpg"style="width:800px;height:450px;"><br>
+Since we want data only from year 2000-2014, we shall use df.loc to get the appropriate values and then sort by country and year, which the code block below helps executes.<br>
+<pre>
+	df_target = pd.read_excel("allraw.xlsx", sheet_name  = target_name[0])
+	df_target = df_target.loc[(df_target["Entity"].isin(selected_countries)) & 
+							  (df_target["Year"]&gt;=2000) & 
+							  (df_target["Year"]&lt;=2014),
+							  ["Entity", "Year", "Meat food supply quantity (kg/capita/yr) (FAO, 2020)"]
+							  ]
+	df_target = df_target.set_index(["Entity","Year"])
+	# we set the index to sort properly
+	# the index will be resetted later to allow for the column to be inserted proprly
+	df_target =df_target.sort_index()
+</pre>
+After cleaning, the dataframe produced looks like this and just needs to be concatenated with the dataframe of variables.<br>
+<img src="/static/meat_df.jpg"style="width:800px;height:450px;"><br><br>
+For the datasets for the predictor variables, the each countries' data are represented as 1 whole row (as shown below) and thus some transposing is needed.<br>
+<img src="/static/raw_variable_data.jpg"style="width:800px;height:450px;"><br>
+The code block below are the steps needed to clean the dataset.
+<pre>
+	df_features = pd.DataFrame()
+	for indicator in feature_names:
+	  df_indicator = pd.read_excel("allraw.xlsx", sheet_name = indicator, header=4)
+	  try:
+	    df_indicator = df_indicator.loc[df_indicator["Country Name"].isin(selected_countries),years_str]
+	  except:
+	    df_indicator = df_indicator.loc[df_indicator["Country Name"].isin(selected_countries),years_int]
+	  df_indicator.columns = [int(col) if col not in ["Country Name","Indicator Name"] else col for col in df_indicator.columns]
+	  df_indicator = df_indicator.set_index(["Country Name"])
+	  # stack to change the df into 1 column
+	  df_indicator = df_indicator.stack().reset_index()
+	  df_indicator = df_indicator.rename(columns={"level_1": "Year", 0: indicator[:-6]})
+	  # here we set again to concat properly
+	  df_indicator = df_indicator.set_index(["Country Name","Year"])
+	  if indicator == feature_names[0]:
+	    df_features = df_indicator
+	  else:
+	    df_features = pd.concat([df_features,df_indicator], axis=1)
+	df_features = df_features.reset_index()
+	df_features = df_features.set_index("Country Name")
+	df_features
+</pre>
+The resulting dataframe is as follows:<br>
+<img src="/static/variable_df.jpg" style="width:800px;height:450px;"><br>
+The 2 dataframes are then joined to create the combined dataframe which we shall use for the rest of the project.
+<img src="/static/combined_df.jpg" style="width:800px;height:450px;"><br>
+</p>
+
+<h3>Building the Model:</h3>
+<p class="lead">
+To build our model, we shall use the same functions as in our cohort and homework problem sets, as seen in the code below.<br>
+<pre>
+	def normalize_z(df):
+    	mean = df.mean(axis = 0)
+    	std = df.std(axis = 0)
+    	z = (df - mean)/std
+    	return z
+
+	def get_features_targets(df, feature_names, target_names):
+	    df_feature = df[feature_names]
+	    df_target = df[target_names]
+	    return df_feature, df_target
+
+	def prepare_feature(df_feature):
+	    out = df_feature.to_numpy()
+	    nrows = np.shape(out)[0]
+	    out = np.concatenate((np.ones((nrows,1)), out), axis = 1)
+	    return out
+
+	def prepare_target(df_target):
+	    out = df_target.to_numpy()
+	    return out
+
+	def predict(df_feature, beta):
+	    df_feature = normalize_z(df_feature)
+	    np_feature = prepare_feature(df_feature)
+	    pred = calc_linear(np_feature, beta)
+	    return pred
+
+	def calc_linear(X, beta):
+	    return np.matmul(X, beta)
+
+	import math
+	def split_data(df_feature, df_target, random_state=None, test_size=0.5):
+	    numrows = len(df_feature)
+	    trainlen = math.ceil(numrows*(1-test_size))
+	    testlen = numrows-trainlen
+	
+	    np.random.seed(random_state)
+	    test_index = np.random.choice(df_feature.index, testlen, replace = False)
+	    train_index = np.random.choice(df_feature.index, trainlen, replace = False)
+	
+	    df_feature_test = df_feature.loc[test_index, df_feature.columns]
+	    df_feature_train = df_feature.drop(df_feature_test.index)
+	    df_target_test = df_target.loc[test_index, df_target.columns]
+	    df_target_train = df_target.drop(df_target_test.index)
+	
+	    return df_feature_train, df_feature_test, df_target_train, df_target_test
+
+	def compute_cost(X, y, beta):
+	    J = 0
+	    nrows = np.shape(X)[0]
+	    pred_y = calc_linear(X, beta)
+	    J = np.matmul(((pred_y)-y).transpose(),((pred_y)-y))
+	    J = (1/(2*nrows)) * J
+	    return J
+
+	def gradient_descent(X, y, beta, alpha, num_iters):
+	    J_storage = np.zeros((num_iters))
+	    m = X.shape[0]
+	
+	    for k in range(num_iters):
+	        deriv = np.matmul(X.T, calc_linear(X,beta)-y)
+	        beta = beta - alpha/m*deriv
+	        J_storage[k] = compute_cost(X,y,beta)
+	    return beta, J_storage
+</pre>
+<pre>
+	# Split the data set into training and test
+	df_features_train, df_features_test, df_target_train, df_target_test = split_data(df_features, df_target,random_state=100,test_size=0.3)
+
+	# Normalize the features using z normalization
+	df_features_train_z = normalize_z(df_features_train)
+
+	# Change the features and the target to numpy array using the prepare functions
+	X = prepare_feature(df_features_train_z)
+	target = prepare_target(df_target_train)
+
+	iterations = 1500
+	alpha = 0.01
+	beta = np.zeros((5,1))
+
+	# Call the gradient_descent function
+	beta, J_storage = gradient_descent(X, target, beta, alpha, iterations)
+	print(beta)
+	# call the predict() method
+	pred = predict(df_features_test, beta)
+</pre>
+From the model we trained, the scatter plot shows the <br>
+<img src="/static/GDP.png" style="width:400px;height:225px;">
+<img src="/static/CO2.png" style="width:400px;height:225px;"><br>
+<img src="/static/Income.png" style="width:400px;height:225px;">
+<img src="/static/Urban.png" style="width:400px;height:225px;"><br>
+</p>
+
+<h3>Evaluating the Model:</h3>
+<p class="lead">
+We use adjusted r2 blah blah blah
+formu;a is from 
+code is 
+<pre>
+	def r2_score(y, ypred):
+	    y_bar = y.mean()
+	    ss_tot = np.sum((y-y_bar)**2)
+	    ss_res = np.sum((y-ypred)**2)
+	    return 1 - (ss_res/ss_tot)
+
+	def adjusted_r2(y, ypred, independent_variables):
+	    n = y.shape[0]
+	    return(1-(1-r2_score(y, ypred)) * (n-1) / (n-1-independent_variables))
+</pre>
+adjusted r2 of 0.8587052316441192
+</p>
+
+<h3>Improving the Model:</h3>
+<p class="lead">
+From the scatter plot above we see that sqrt blah balh
+<pre>
+	import math
+	def transform_features(df_feature, colname, colname_transformed):
+		df_feature[colname_transformed] = df_feature.apply(lambda row:math.sqrt(row[colname]), axis=1)
+		return df_feature
+	df_combined = transform_features(df_combined, "GDP_per_capita", "sqrt(GDP_per_capita)")
+	df_combined = transform_features(df_combined, "Income_per_capita", "sqrt(Income_per_capita)")
+</pre>
+final result looks better
+show scatter plot
+blah blah
+adjusted r2 of 0.8769939341332519
+can play/predict with model in <a href="/data">Model</a> tab
+</p>
+{% endblock %}
