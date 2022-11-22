@@ -3,7 +3,8 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 import io
 import base64
-
+import time
+import numpy as np
 
 def get_combined_dataframe():
   target_name = ["Meat_consume (raw)"]
@@ -56,10 +57,13 @@ def get_unique_countries():
   return(get_combined_dataframe()["Country Name"].unique())
 
 def draw_plots(countries):
+  start_time = time.time()
   df = get_country(countries)
+  print("--- %s seconds ---" % (time.time() - start_time))
   columns = ["GDP_per_capita",	"CO2", "Income_per_capita",	"Urban_population"]
   plots = []
   for variable in columns:
+    start_time = time.time()
     fig = Figure()
     axis = fig.add_subplot(1, 1, 1)
     axis.set_title(variable)
@@ -78,8 +82,117 @@ def draw_plots(countries):
     pngImageB64String += base64.b64encode(pngImage.getvalue()).decode('utf8')
 
     plots.append(pngImageB64String)
+    print("--- %s seconds ---" % (time.time() - start_time))
   return(plots)
 
-# get_unique_countries()
-# (get_country("Georgia"))
-# draw_plots(["Georgia"])
+def get_features_targets(df, feature_names, target_names):
+    df_feature = df[feature_names]
+    df_target = df[target_names]
+    return df_feature, df_target
+
+def normalize_z(df, mean=None, std= None):
+  if type(mean) == pd.Series:
+    z = (df - mean)/std
+    return z
+  else:
+    mean = df.mean(axis = 0)
+    std = df.std(axis = 0)
+    z = (df - mean)/std
+    return z
+
+def prepare_feature(df_feature):
+    out = df_feature.to_numpy()
+    nrows = np.shape(out)[0]
+    out = np.concatenate((np.ones((nrows,1)), out), axis = 1)
+    return out
+
+def prepare_target(df_target):
+    out = df_target.to_numpy()
+    return out
+
+def calc_linear(X, beta):
+    return np.matmul(X, beta)
+
+def predict(df_feature, mean=None, std=None):
+    beta_init = [[27.61897951], [ 3.69675744], [ 9.06746831], [ 4.36772633], [ 4.15094336]]
+    beta_improved = [[27.61897951], [ 5.08183451], [ 6.31857727], [ 5.8035173 ], [ 3.95143081]]
+    df_feature = normalize_z(df_feature, mean, std)
+    np_feature = prepare_feature(df_feature)
+    pred_init = calc_linear(np_feature, beta_init)
+    pred_improved = calc_linear(np_feature, beta_improved)
+    return (pred_init,pred_improved)
+
+def draw_plots_for_model(countries, mean=None, std=None):
+  df = get_country(countries)
+  columns = ["GDP_per_capita",	"CO2", "Income_per_capita",	"Urban_population"]
+  plots = []
+  df_features, df_target = get_features_targets(df ,columns,["Meat consumed"])
+  pred_init,pred_improved = predict(df_features, mean, std)
+  for variable in columns:
+    fig = Figure()
+    axis = fig.add_subplot(1, 1, 1)
+    axis.set_title(variable)
+    axis.set_xlabel(variable)
+    axis.set_ylabel("Meat Consumed")
+    axis.scatter(df_features[variable], df_target, label = 'Actual')
+    axis.scatter(df_features[variable], pred_init, label = 'Predicted-initial model')
+    axis.scatter(df_features[variable], pred_improved, label = 'Predicted-improved model')
+    axis.legend(loc="lower right")
+        # Convert plot to PNG image
+    pngImage = io.BytesIO()
+    FigureCanvas(fig).print_png(pngImage)
+    
+    # Encode PNG image to base64 string
+    pngImageB64String = "data:image/png;base64,"
+    pngImageB64String += base64.b64encode(pngImage.getvalue()).decode('utf8')
+
+    plots.append(pngImageB64String)
+  return(plots)
+
+def r2_score(y, ypred):
+    y_bar = y.mean()
+    ss_tot = np.sum((y-y_bar)**2)
+    ss_res = np.sum((y-ypred)**2)
+    return 1 - (ss_res/ss_tot)
+
+def adjusted_r2(y, ypred, independent_variables):
+    n = y.shape[0]
+    return(1-(1-r2_score(y, ypred)) * (n-1) / (n-1-independent_variables))
+
+def r2_both(countries, mean=None, std=None):
+  df = get_country(countries)
+  columns = ["GDP_per_capita",	"CO2", "Income_per_capita",	"Urban_population"]
+  df_features, df_target = get_features_targets(df ,columns,["Meat consumed"])
+  pred = predict(df_features, mean, std)
+  return([adjusted_r2(prepare_target(df_target),pred[0],4),adjusted_r2(prepare_target(df_target),pred[1],4)])
+
+import math
+def split_data(df_feature, df_target, random_state=None, test_size=0.5):
+    numrows = len(df_feature)
+    trainlen = math.ceil(numrows*(1-test_size))
+    testlen = numrows-trainlen
+    
+    np.random.seed(random_state)
+    test_index = np.random.choice(df_feature.index, testlen, replace = False)
+    train_index = np.random.choice(df_feature.index, trainlen, replace = False)
+    
+    df_feature_test = df_feature.loc[test_index, df_feature.columns]
+    df_feature_train = df_feature.drop(df_feature_test.index)
+    df_target_test = df_target.loc[test_index, df_target.columns]
+    df_target_train = df_target.drop(df_target_test.index)
+    
+    return df_feature_train, df_feature_test, df_target_train, df_target_test
+
+def get_mean_std(df):
+    mean = df.mean(axis = 0)
+    std = df.std(axis = 0)
+    return(mean,std)
+
+def get_df_features_train():
+  df = get_combined_dataframe()
+  selected_countries = ["Georgia" ,"Kenya" ,"Korea, Rep." ,"Liberia" ,'Madagascar' ,"Maldives" ,"Morocco" ,"Nepal" ,"Senegal" ,"South Africa" ,"Tanzania" ,"Thailand" ,"Uganda" ,"Ukraine" ,"United Kingdom"]
+  df_countries = df.loc[df["Country Name"].isin(selected_countries),:]
+  columns = ["GDP_per_capita", "CO2", "Income_per_capita", "Urban_population"]
+  df_features, df_target = get_features_targets(df_countries ,columns,["Meat consumed"])
+  df_features_train, df_features_test, df_target_train, df_target_test = split_data(df_features, df_target,random_state=100,test_size=0.3)
+  return(df_features_train)

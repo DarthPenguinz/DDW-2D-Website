@@ -3,27 +3,29 @@
 {% block app_content %}
 
 <h3>Data:</h3>
-<p class="lead">
+<p>
 <ul>
     <li>Meat Consumption: <a href="https://ourworldindata.org/grapher/meat-consumption-vs-gdp-per-capita" target="_blank">Site</a></li>
     <li>GDP per capita: <a href="https://data.worldbank.org/indicator/NY.GDP.PCAP.CD" target="_blank">Site</a></li>
-    <li>Inflation: <a href="https://data.worldbank.org/indicator/FP.CPI.TOTL.ZG" target="_blank">Site</a></li>
-    <li>Unemployment Rate: <a href="https://data.worldbank.org/indicator/SL.UEM.TOTL.ZS" target="_blank">Site</a></li>
     <li>Income per capita: <a href="https://data.worldbank.org/indicator/NY.ADJ.NNTY.PC.CD" target="_blank">Site</a></li>
-    <li>Cost of Living: <a href="https://data.worldbank.org/indicator/FP.CPI.TOTL" target="_blank">Site</a></li>
+    <li>Urban Population: <a href="https://data.worldbank.org/indicator/SP.URB.TOTL" target="_blank">Site</a></li>
+    <li>CO2 emissions: <a href="https://data.worldbank.org/indicator/EN.ATM.CO2E.KT" target="_blank">Site</a></li>
 </ul>
 For the combined dataset, you can download it by clicking <a href="/static/allraw.xslx" download>this</a>.<br>
 </p>
-<p class="lead">
+<hr>
+<p>
 You can choose the data for the country/countries you want to look by choosing the countries below.<br>
 Do take note that this is not optimized and will take a while (~10 seconds depending on number of countries selected) to load<br>
 This will also plot out the graphs of the variables<br>
+<hr>
 {{ wtf.render_form(form)}}
 {% for table in tables %}
             {{ table|safe }}
 {% endfor %}
+<hr>
 {% for image in images %}
-             <img src="{{ image }}"/>
+             <img src="{{ image }}" style="width:400px;height:225px;"/>
 {% endfor %}
 </p>
 

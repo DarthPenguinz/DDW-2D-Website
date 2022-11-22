@@ -2,6 +2,7 @@ from flask import Flask
 from flask_bootstrap import Bootstrap5
 from app.middleware import PrefixMiddleware
 from config import Config
+from flask_migrate import Migrate
 
 application = Flask(__name__)
 application.config.from_object(Config)

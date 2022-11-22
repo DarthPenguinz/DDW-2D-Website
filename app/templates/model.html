@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% import "bootstrap/form.html" as wtf %}
+{% block app_content %}
+
+<h3>Model:</h3>
+<h5>Initial Model:</h5>
+<p>
+Our initial model is<br>
+<p class="small">
+    Meat Consumed = 27.6189795 + 3.69675744 x<sub>GDP_per_capita</sub><sup>normalized</sup> + 9.06746831 x<sub>CO2_emissions</sub><sup>normalized</sup> + 4.36772633 x<sub>Income_per_capita</sub><sup>normalized</sup> + 4.15094336 x<sub>Urban_population</sub><sup>normalized</sup><br>
+    where
+    <ul>
+        <li>
+            x<sub>GDP_per_capita</sub><sup>normalized</sup> is the GDP (in US$) of the country is divided by it's midyear population.  
+        </li>
+        <li>
+            x<sub>CO2_emissions</sub><sup>normalized</sup> + 4.36772633 x<sub>Income_per_capita</sub><sup>normalized</sup> is the total CO2(in Kilo Tonnes) emitted by the country in the year
+        </li>
+        <li>
+            x<sub>Income_per_capita</sub><sup>normalized</sup> is the gross national income of the country(in US$) minus consumption of fixed capital and natural resources depletion divided by midyear population
+        </li>
+        <li>
+            x<sub>Urban_population</sub><sup>normalized</sup> is the number of people living in urban areas as defined by national statistical offices.
+        </li>
+    </ul>
+</p><br>
+The fit is as shown in the images below.<br>
+The adjusted R<sup>2</sup> is 0.860984179520827<br>
+<img class="bg-light" src="/static/gdp_init.png" style="width:400px;height:225px;">
+<img class="bg-light" src="/static/co2_init.png" style="width:400px;height:225px;"><br>
+<img class="bg-light" src="/static/income_init.png" style="width:400px;height:225px;">
+<img class="bg-light" src="/static/urban_init.png" style="width:400px;height:225px;"><br>
+</p>
+<hr>
+<h5>Improved Model:</h5>
+<p>
+Our improved model is<br>
+<p class="small">Meat Consumed =<br>
+27.61897951 + 5.08183451 sqrt(x<sub>GDP_per_capita</sub>)<sup>normalized</sup> + 6.31857727 x<sub>CO2_emissions</sub><sup>normalized</sup> + 5.8035173 sqrt(x<sub>Income_per_capita</sub>)<sup>normalized</sup> + 3.95143081 x<sub>Urban_population</sub><sup>normalized</sup><br>
+where
+<ul>
+    <li>
+        x<sub>GDP_per_capita</sub><sup>normalized</sup> is the GDP (in US$) of the country is divided by it's midyear population.  
+    </li>
+    <li>
+        x<sub>CO2_emissions</sub><sup>normalized</sup> + 4.36772633 x<sub>Income_per_capita</sub><sup>normalized</sup> is the total CO2(in Kilo Tonnes) emitted by the country in the year
+    </li>
+    <li>
+        x<sub>Income_per_capita</sub><sup>normalized</sup> is the gross national income of the country(in US$) minus consumption of fixed capital and natural resources depletion divided by midyear population
+    </li>
+    <li>
+        x<sub>Urban_population</sub><sup>normalized</sup> is the number of people living in urban areas as defined by national statistical offices.
+    </li>
+</ul>
+</p><br>
+The fit is as shown in the images below.<br>
+The adjusted R<sup>2</sup> is 0.8789779029375543<br>
+<img class="bg-light" src="/static/gdp_imp.png" style="width:400px;height:225px;">
+<img class="bg-light" src="/static/co2_imp.png" style="width:400px;height:225px;"><br>
+<img class="bg-light" src="/static/income_imp.png" style="width:400px;height:225px;">
+<img class="bg-light" src="/static/urban_imp.png" style="width:400px;height:225px;"><br>
+</p>
+
+<p>
+You can choose to see the fit for the country/countries you want to look by choosing the countries below.<br>
+Do take note that this is not optimized and will take a while (~10 seconds depending on number of countries selected) to load<br>
+This will also plot out the graphs of the variables and the adjusted R<sup>2</sup> value<br>
+<hr>
+There will be 2 versions of the graphs and R<sup>2</sup> presented.<br>
+The first version treats the new countries's data as one whole testing dataset and normalizes the whole dataset using its own mean and standard deviation.<br>
+The second version normalizes the new dataset using the mean and standard deviation of our training dataset.<br>
+The data was normalized due to the difference in the scale of different variables.<br>
+However, due to the inherenent difference in countries(i.e richer and poorer countries), there will be difference in the post-normalized data depending on if you use the first or second version.<br>
+While we do have a good mix of countries used in our datasets, we are not able to account for all the different countries.<br>
+As such, we expect there to be difference between the first and second version.<br>
+The first version will likely produce better results if the countries selected are similar to our countries used in our training set while the second version will likely have better results for countries that are more different from our countries used.<br>
+But results may vary.<br>
+Further investigation is needed to identify the factors causing the difference.
+<hr>
+{{ wtf.render_form(form)}}
+<hr>
+{% if r2_2 != None %}
+<h4>Version 1</h4>
+{% for image in images_1 %}
+    <img src="{{ image }}" style="width:400px;height:225px;"/>  
+{% endfor %}
+<hr>
+{% if r2_1 != None %}
+    Adjusted R<sup>2</sup> for initial model = {{r2_1[0]}}<br>
+    Adjusted R<sup>2</sup> for improved model = {{r2_1[1]}}
+
+{% endif %}
+<hr>
+<h4>Version 2</h4>
+{% for image in images_2 %}
+    <img src="{{ image }}" style="width:400px;height:225px;"/>  
+{% endfor %}
+<hr>
+{% if r2_2 != None %}
+    Adjusted R<sup>2</sup> for initial model = {{r2_2[0]}}<br>
+    Adjusted R<sup>2</sup> for improved model = {{r2_2[1]}}
+
+{% endif %}
+{% endif %}
+</p>
+{% endblock %}
