@@ -57,13 +57,10 @@ def get_unique_countries():
   return(get_combined_dataframe()["Country Name"].unique())
 
 def draw_plots(countries):
-  start_time = time.time()
   df = get_country(countries)
-  print("--- %s seconds ---" % (time.time() - start_time))
   columns = ["GDP_per_capita",	"CO2", "Income_per_capita",	"Urban_population"]
   plots = []
   for variable in columns:
-    start_time = time.time()
     fig = Figure()
     axis = fig.add_subplot(1, 1, 1)
     axis.set_title(variable)
@@ -73,7 +70,8 @@ def draw_plots(countries):
       df_country = df[df["Country Name"]==country]
       axis.scatter(df_country[variable], df_country["Meat consumed"], label = country)
     axis.legend(loc="lower right")
-        # Convert plot to PNG image
+    # Convert plot to PNG image
+    # following code is from https://gitlab.com/snippets/1924163
     pngImage = io.BytesIO()
     FigureCanvas(fig).print_png(pngImage)
     
@@ -82,7 +80,6 @@ def draw_plots(countries):
     pngImageB64String += base64.b64encode(pngImage.getvalue()).decode('utf8')
 
     plots.append(pngImageB64String)
-    print("--- %s seconds ---" % (time.time() - start_time))
   return(plots)
 
 def get_features_targets(df, feature_names, target_names):
@@ -138,7 +135,7 @@ def draw_plots_for_model(countries, mean=None, std=None):
     axis.scatter(df_features[variable], pred_init, label = 'Predicted-initial model')
     axis.scatter(df_features[variable], pred_improved, label = 'Predicted-improved model')
     axis.legend(loc="lower right")
-        # Convert plot to PNG image
+    # Convert plot to PNG image
     pngImage = io.BytesIO()
     FigureCanvas(fig).print_png(pngImage)
     

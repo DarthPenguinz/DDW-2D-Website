@@ -17,7 +17,10 @@ How might we predic meat intake across the world based on socioeconomic factors?
 For our data, we are using 2 sources.<br>
 For the independent variable (Meat Consumption), we are using data from <a href="https://ourworldindata.org/" target="_blank">Our World in Data </a>.<br>
 For the dependent/predictor variables, we are using data from the the <a href="https://data.worldbank.org/" target="_blank">World Bank Open Data </a>.<br>
-If you would like to view/download the data, head over to the <a href="/data">Data</a> tab.
+If you would like to view/download the data, head over to the <a href="/data">Data</a> tab.<br>
+We chose to use data from the same source to ensure uniformity and consistency throughout. The data source is also reliable as it is from a non-profit organization and will likely be less biased. The dataset was cleaned up using Excel, empty data points were removed, and the data formatted neatly to perform regression modelling. <br>
+
+The independent variables are chosen based on common sense, trial and error, and data visualization. The countries used were chosen at random to obtain a sample of the world population.<br>
 </p>
 
 <h3>Cleaning the datasets:</h3>
@@ -82,20 +85,21 @@ The 2 dataframes are then joined to create the combined dataframe which we shall
 <h3>Features and Targets:</h3>
 <p>
 Feature Variables:
+We have chosen these features using intuition and their linear fit with the target<br>
 <dl>
 	<dt>Urban Population</dt>
-	<dd>Urban population refers to people living in urban areas as defined by national statistical offices. It is calculated using World Bank population estimates and urban ratios from the United Nations World Urbanization Prospects. Aggregation of urban and rural population may not add up to total population because of different country coverages.</dd>
-	<dt>Income per capita (US$)</dt>
-	<dd>Adjusted net national income is GNI minus consumption of fixed capital and natural resources depletion.</dd>
+	<dd>Urban population refers to people living in urban areas as defined by national statistical offices. It is calculated using World Bank population estimates and urban ratios from the United Nations World Urbanization Prospects. Aggregation of urban and rural population may not add up to total population because of different country coverages.(World Bank, 2018) </dd>
+	<dt>Adjusted Net National Income per capita</dt> 
+	<dd>Adjusted Net National Income per capita is the Gross National Income (GNI) minus consumption of fixed capital and natural resources depletion divided by the country’s population. (World Bank, 2020)</dd>
 	<dt>Gross Domestic Product (GDP) per capita (US$) </dt>
-	<dd>GDP per capita is gross domestic product divided by midyear population.</dd>
+	<dd>GDP per capita is gross domestic product divided by midyear population. This is linearly independent from IC as GDP does not take into account net monetary flow into the country from foreign investment. (World Bank national accounts data, 2022) </dd>
 	<dt>Carbon Dioxide Emissions (Kilo Tonnes)</dt>
-	<dd>Carbon dioxide emissions are those stemming from the burning of fossil fuels and the manufacture of cement. They include carbon dioxide produced during consumption of solid, liquid, and gas fuels and gas flaring.</dd>
+	<dd>Carbon dioxide emissions are those stemming from the burning of fossil fuels and the manufacture of cement. They include carbon dioxide produced during consumption of solid, liquid, and gas fuels and gas flaring. (Climate Watch. 2020. GHG Emissions. Washington, DC: World Resources Institute, World Bank | Data, 2020)</dd>
 </dl>
 Target Variables:
 <dl>
-	<dt>Meat consumption per capita </dt>
-	<dd>Average meat consumption per capita, measured in kilograms per year. Figures do not include fish or seafood.</dd>
+	<dt>Meat consumption per capita(kg)</dt>
+	<dd>Average meat consumption per capita, measured in kilograms per year. Figures do not include fish or seafood.  (Our World in Data, Food and Agriculture Organization of the United Nations, 2022)</dd>
 </dl>
 We chose our countries randomly and now we shall get the countries data and split into our features and taregt dataframe.
 <pre class="bg-secondary rounded">
@@ -231,7 +235,9 @@ From the model we trained, the scatter plot for the training set and full set is
 <hr>
 <h3>Evaluating the Model:</h3>
 <p>
-We use adjusted R<sup>2</sup> as ???<br>
+We chose to use the adjusted R-squared value to measure the success of our regression as it only increases when relevant variables are added into a model, unlike R-squared value. In the exploration phase for Task II, we tested our models with different number of variables. When using a “trial and error” method, adjusted R-squared value is especially useful to find the appropriate variables in the first and second model.<br>
+
+For this task, the adjusted R-squared value can be used to measure different models with the same number of predictor variables. A higher adjusted R-squared value would indicate a better model. Hence, adjusted R-squared value is a suitable metric to measure a successful model.<br>
 
 R<sup>2</sup><sub>adjusted</sub> = 1 - (1-R<sup>2</sup>)(n-1)/(n-k-1)<br>
 
@@ -280,6 +286,53 @@ From the new model we trained, the scatter plot for the training set and full se
 <img class="bg-light" src="/static/urban_imp.png" style="width:400px;height:225px;"><br>
 </p>
 The new model gives has an adjusted R<sup>2</sup> of 0.8789779029375543, which is an improvement from the previous model.<br>
-Head to the <a href="/data">Model</a> tab to try out the model with various countries or any data you would like<br>
+Head to the <a href="/data">Model</a> tab to try out the model with various countries<br>
 </p>
+<hr>
+<h5>Discussion and Analysis</h5>
+<h6>Model accuracy</h6>
+After the transformation of GDP per capita and Income per capita, we observed an improvement in the adjusted R-squared value from 0.861 to 0.879.
+<h6>Weakness</h6>
+<ul>
+	<li>
+		Given the small sample of countries, our model may not be able to accurately predict meat consumption for all countries.
+	</li>
+	<li>
+		The model will output a value for extreme and illogical cases. For example, when all variables are set to 0, one would expect meat consumption to be 0 however it still yields a positive value this suggests that there are other factors that affect meat consumption that is not considered.
+	</li>
+	<li>
+		Our dataset does not account for external factors that only affects certain countries. This can lead to a group of countries having different linear trends as observed in the “sqrt GDP” and “sqrt Income” graphs where the data can produce 2 regression lines. 
+	</li>
+</ul>
+<h6>Further Improvements</h6>
+During the exploration phase and after the linear transformation, we noticed some groups of countries are vastly different from the majority and shows a separate trend from the rest. This could suggest that another model for these groups will be more fitting. Alternatively, more variables can be used in our model to account for differences between countries to create a model that can accurately predict meat consumption for any country.
+<br>
+However, the latter is harder to implement it is difficult to find more data that is measured in the same standard for all countries and the complexity of the model would make it unfeasible. Thus, regional models or models in different categories (such as high or low GDP) can be used to predict meat consumption more accurately for all countries.
+<br>
+While Adjusted R-squared for each model is sufficiently high, correlation does not mean causation. Thus, further qualitative research should be done to prove that the factors chosen in fact affect meat consumption in a country.
+<hr>
+<h5>References</h5>
+<ul>
+	<li>
+		Climate Watch. 2020. GHG Emissions. Washington, DC: World Resources Institute, World Bank | Data. (2020). CO2 emissions (kt) | Data. Retrieved from THE WORLD BANK | Data: https://data.worldbank.org/indicator/EN.ATM.CO2E.KT
+	</li>
+	<li>
+		Food and Agriculture Organization and World Bank. (2022). Population density (people per sq.km of land area). Retrieved from The World Bank: https://data.worldbank.org/indicator/EN.POP.DNST
+	</li>
+	<li>
+		International Monetary Fund. (2022). Inflation, consumer prices (annual %). Retrieved from The World Bank: https://data.worldbank.org/indicator/FP.CPI.TOTL.ZG
+	</li>
+	<li>
+		Our World in Data, Food and Agriculture Organization of the United Nations. (2022, May 17). Daily meat consumption per person, 2019. Retrieved from Our World in Data: https://ourworldindata.org/grapher/daily-meat-consumption-per-person?time=latest
+	</li>
+	<li>
+		World Bank. (2018). Urban Population. Retrieved from The World Bank: https://data.worldbank.org/indicator/SP.URB.TOTL?view=chart
+	</li>
+	<li>
+		World Bank. (2020). Adjusted net national income per capita (current US$) | Data. Retrieved from THE WORLD BANK | Data: https://data.worldbank.org/indicator/NY.ADJ.NNTY.PC.CD?view=chart
+	</li>
+	<li>
+		World Bank national accounts data, O. N. (2022). GDP (current US$) | Data. Retrieved from THE WORLD BANK | Data: https://data.worldbank.org/indicator/NY.GDP.MKTP.CD
+	</li>
+</ul>
 {% endblock %}
