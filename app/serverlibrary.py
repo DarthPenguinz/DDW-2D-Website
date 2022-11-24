@@ -161,7 +161,7 @@ def r2_both(countries, mean=None, std=None):
   columns = ["GDP_per_capita",	"CO2", "Income_per_capita",	"Urban_population"]
   df_features, df_target = get_features_targets(df ,columns,["Meat consumed"])
   pred = predict(df_features, mean, std)
-  return([adjusted_r2(prepare_target(df_target),pred[0],4),adjusted_r2(prepare_target(df_target),pred[1],4)])
+  return([r2_score(prepare_target(df_target),pred[0]),adjusted_r2(prepare_target(df_target),pred[0],4),r2_score(prepare_target(df_target),pred[1]),adjusted_r2(prepare_target(df_target),pred[1],4)])
 
 import math
 def split_data(df_feature, df_target, random_state=None, test_size=0.5):
